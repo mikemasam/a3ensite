@@ -93,7 +93,7 @@ function $disable(){
     console.log("-> a3ensite already disabled");
   }else{
     console.log("-> a3ensite disabling...");
-    fs.rmSync(loc);
+    fs.writeFileSync(loc, "");
     console.log("-> a3ensite disabled");
   }
   $status();
