@@ -1,0 +1,26 @@
+{
+  "name": "a3ensite",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Apache Site Manager, JSON based",
+  "main": "index.js",
+  "scripts": {},
+  "bin": {
+    "a3ensite": "index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mikemasam/a3ensite.git"
+  },
+  "keywords": [
+    "nginx",
+    "Apache",
+    "Apache2",
+    "a2ensite",
+    "a3ensite",
+    "webserver",
+    "automation"
+  ],
+  "author": "mikem",
+  "license": "ISC"
+}
