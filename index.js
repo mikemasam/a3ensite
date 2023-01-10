@@ -56,9 +56,14 @@ function $build(){
             value: app$config.defaults[var_.name],
           });
         }else{
-          console_error(`Missing ${var_.name}`);
+          if(input.optional) {
+            line = null;
+          } else {
+            console_error(`Missing ${var_.name}`);
+          }
         }
       }
+      if(line === null) continue;
       while(_varlist.length){
         const var_ = _varlist.pop();
         line = line.replace(`~//${var_.pos}//~`, var_.value);
@@ -168,7 +173,8 @@ function setup_template(app$argv){
   for(let line of lines){
     let pos = 0;
     const varlist = [];
-    let var_ = line.match(/\$\[([^\s]+)\]\$/)
+    let var_ = line.match(/\$\??\[([^\s]+)\]\$/)
+    let optional = false;
     while(var_ && var_['index']){
       const _flag = var_[0];
       const flag = var_[1];
@@ -177,15 +183,16 @@ function setup_template(app$argv){
       const before = line.slice(0, _i);
       const after = line.slice(_i + _flag.length);
       line = `${before}~//${pos}//~${after}`;
+      if(_flag.indexOf("$?") == 0) optional = true;
       varlist.push({
         name: flag,
-        pos
+        pos,
       });
       pos++;
       var_ = line.match(/\$\[([^\s]+)\]\$/)
 
     }
-    output.push({ varlist, line });
+    output.push({ varlist, line, optional });
     //console.log(line);
   }
   return output;
