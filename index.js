@@ -71,8 +71,9 @@ function $build(){
 
 function enabled$loc(){
   const loc = app$config.server.EnabledLoc;
+  const output_file = app$config.server.OutputFile || 'a3ensite.live.conf';;
   if(!access$check(loc)) console_error(`config.server.EnabledLoc ${loc} is unaccessable.`);
-  return path.join(loc, 'a3ensite.live');
+  return path.join(loc, output_file);
 }
 
 function $enable(){
