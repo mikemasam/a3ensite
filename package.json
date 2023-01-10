@@ -2,7 +2,7 @@
   "name": "a3ensite",
   "version": "0.0.1",
   "type": "module",
-  "description": "Apache Site Manager, JSON based",
+  "description": "Apache/Nginx/Config Manager, JSON based",
   "main": "index.js",
   "scripts": {},
   "bin": {
@@ -22,5 +22,5 @@
     "automation"
   ],
   "author": "mikem",
-  "license": "ISC"
+  "license": "Apache License 2.0"
 }

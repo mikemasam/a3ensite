@@ -203,7 +203,6 @@ function access$check(loc){
     nodefs.accessSync(loc, nodefs.constants.R_OK | nodefs.constants.W_OK);
     return true;
   } catch (err) {
-    console.log(err);
     return false;
   }
 }
