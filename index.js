@@ -72,7 +72,7 @@ function $build(){
 function enabled$loc(){
   const loc = app$config.server.EnabledLoc;
   if(!access$check(loc)) console_error(`config.server.EnabledLoc ${loc} is unaccessable.`);
-  return path.join(loc, 'a3ensite.conf');
+  return path.join(loc, 'a3ensite.live');
 }
 
 function $enable(){
