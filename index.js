@@ -27,7 +27,7 @@ for(let i = 0; i < tasks.length; i++){
   task();
 }
 if(handled == false){
-  console_error("Help \n--config a3ensite.json \n--template template.conf");
+  console_error("Help \n--config a3ensite.json \n--template a3ensite.conf");
 }
 console.log("\n");
 
@@ -138,7 +138,7 @@ function setup_config(){
 function setup_argv(){
   const _argv = process.argv.splice(2);
   const argv = {
-    $template: "./template.conf",
+    $template: "./a3ensite.conf",
     $config: "./a3ensite.json",
   };
   for(let i = 0; i < _argv.length; i++){
