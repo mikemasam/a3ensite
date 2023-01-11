@@ -44,20 +44,25 @@ function $build(){
       const _varlist = [];
       for(const var_ of varlist){
         if(site[var_.name] !== undefined){
-          _varlist.push({
-            name: var_.name,
-            pos: var_.pos,
-            value: site[var_.name],
-          });
+          if(input.typed != "display"){
+            _varlist.push({
+              name: var_.name,
+              pos: var_.pos,
+              value: site[var_.name],
+            });
+          }
         }else if(app$config.defaults[var_.name] !== undefined){
-          _varlist.push({
-            name: var_.name,
-            pos: var_.pos,
-            value: app$config.defaults[var_.name],
-          });
+          if(input.typed != "display"){
+            _varlist.push({
+              name: var_.name,
+              pos: var_.pos,
+              value: app$config.defaults[var_.name],
+            });
+          }
         }else{
-          if(input.optional) {
+          if(input.typed == "optional" || input.typed == "display") {
             line = null;
+            break;
           } else {
             console_error(`Missing ${var_.name}`);
           }
@@ -173,8 +178,8 @@ function setup_template(app$argv){
   for(let line of lines){
     let pos = 0;
     const varlist = [];
-    let var_ = line.match(/\$\??\[([^\s]+)\]\$/)
-    let optional = false;
+    let var_ = line.match(/\$\??\!?\[([^\s]+)\]\$/)
+    let typed = "required";
     while(var_ && var_['index']){
       const _flag = var_[0];
       const flag = var_[1];
@@ -182,17 +187,24 @@ function setup_template(app$argv){
       const _i = var_['index'];
       const before = line.slice(0, _i);
       const after = line.slice(_i + _flag.length);
-      line = `${before}~//${pos}//~${after}`;
-      if(_flag.indexOf("$?") == 0) optional = true;
+      if(_flag.indexOf("$?") == 0) {
+        typed = "optional";
+        line = `${before}~//${pos}//~${after}`;
+      } else if(_flag.indexOf("$!") == 0) {
+        typed = "display";
+        line = `${before}${after}`;
+      } else {
+        line = `${before}~//${pos}//~${after}`;
+      }
       varlist.push({
         name: flag,
         pos,
       });
       pos++;
-      var_ = line.match(/\$\[([^\s]+)\]\$/)
+      var_ = line.match(/\$\??\!?\[([^\s]+)\]\$/)
 
     }
-    output.push({ varlist, line, optional });
+    output.push({ varlist, line, typed });
     //console.log(line);
   }
   return output;
