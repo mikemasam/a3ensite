@@ -44,7 +44,7 @@ function $build(){
       const _varlist = [];
       for(const var_ of varlist){
         if(site[var_.name] !== undefined){
-          if(input.typed != "display"){
+          if(var_.typed != "display"){
             _varlist.push({
               name: var_.name,
               pos: var_.pos,
@@ -52,7 +52,7 @@ function $build(){
             });
           }
         }else if(app$config.defaults[var_.name] !== undefined){
-          if(input.typed != "display"){
+          if(var_.typed != "display"){
             _varlist.push({
               name: var_.name,
               pos: var_.pos,
@@ -60,7 +60,7 @@ function $build(){
             });
           }
         }else{
-          if(input.typed == "optional" || input.typed == "display") {
+          if(var_.typed == "optional" || var_.typed == "display") {
             line = null;
             break;
           } else {
@@ -179,8 +179,8 @@ function setup_template(app$argv){
     let pos = 0;
     const varlist = [];
     let var_ = line.match(/\$\??\!?\[([^\s]+)\]\$/)
-    let typed = "required";
     while(var_ && var_['index']){
+      let typed = "required";
       const _flag = var_[0];
       const flag = var_[1];
       //console.log(var_);
@@ -199,12 +199,13 @@ function setup_template(app$argv){
       varlist.push({
         name: flag,
         pos,
+        typed
       });
       pos++;
       var_ = line.match(/\$\??\!?\[([^\s]+)\]\$/)
 
     }
-    output.push({ varlist, line, typed });
+    output.push({ varlist, line });
     //console.log(line);
   }
   return output;
