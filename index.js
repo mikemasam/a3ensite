@@ -4,16 +4,19 @@ import nodefs from 'node:fs';
 import url from 'url';
 import path from 'path';
 //{ accessSync, constants }
-console.log("-> Still Lovin You");
-console.log("\n");
-
-function console_error(message){
-  console.warn(message);
+function print_error(...args){
+  console.warn(...args);
   console.warn("-----------------------------\n");
   process.exit(0);
 }
+function print_log(...args){
+  console.log(...args);
+}
+print_log("-> Still Lovin You");
+print_log("\n");
 
-//console.log("ENV", local_file("a3ensite.json"));
+
+//print_log("ENV", local_file("a3ensite.json"));
 const app$argv = setup_argv();
 const app$config = setup_config();
 const tasks = ["enable", "disable", "status"];
@@ -27,62 +30,94 @@ for(let i = 0; i < tasks.length; i++){
   task();
 }
 if(handled == false){
-  console_error("Help \n--config a3ensite.json \n--template a3ensite.conf");
+  print_error("Help \n--config a3ensite.json \n--template a3ensite.conf");
 }
-console.log("\n");
+print_log("\n");
 
 function $build(){
   const body = setup_template(app$argv);
-  if(!Array.isArray(app$config.sites)) console_error("[Array] config.sites is required");
+  if(!Array.isArray(app$config.sites)) print_error("[Array] config.sites is required");
   const sites = app$config.sites;
-  const output = [];
+  const var_builds = [];
   for(let site of sites){
     const state = [];
+    const var_build = { graph: [], count: 1 };
     for(let input of body){
       const varlist = input.varlist;
       let line = input.line;
       const _varlist = [];
       for(const var_ of varlist){
+        let _value = undefined;
         if(site[var_.name] !== undefined){
           if(var_.typed != "display"){
-            _varlist.push({
-              name: var_.name,
-              pos: var_.pos,
-              value: site[var_.name],
-            });
+            _value = site[var_.name];
           }
         }else if(app$config.defaults[var_.name] !== undefined){
           if(var_.typed != "display"){
-            _varlist.push({
-              name: var_.name,
-              pos: var_.pos,
-              value: app$config.defaults[var_.name],
-            });
+            _value = app$config.defaults[var_.name];
           }
         }else{
           if(var_.typed == "optional" || var_.typed == "display") {
             line = null;
             break;
           } else {
-            console_error(`Missing ${var_.name}`);
+            print_error(`Missing ${var_.name}`);
           }
         }
+        if(_value === undefined) continue;
+        if(!Array.isArray(_value)) _value = [_value];
+        if(_value.length > 1){
+          if(var_build.count == 1) var_build.count = _value.length;
+          else if(_value.length != var_build.count){
+            print_error(`${input.template_file}: ${input.numberline} Expected ${var_build.count} values, Found ${_value.length} values`);
+          }
+        }
+        _varlist.push({
+          name: var_.name,
+          pos: var_.pos,
+          value: _value,
+        });
       }
       if(line === null) continue;
-      while(_varlist.length){
-        const var_ = _varlist.pop();
-        line = line.replace(`~//${var_.pos}//~`, var_.value);
+      var_build.graph.push({
+        line: line,
+        varlist: [..._varlist]
+      });
+//      while(_varlist.length){
+//        const var_ = _varlist.pop();
+//        line = line.replace(`~//${var_.pos}//~`, var_.value);
+//      }
+//      output.push(line);
+    }
+    var_builds.push(var_build);
+  }
+
+  const output = [];
+  for(let var_build of var_builds){
+    for(let i = 0; i < var_build.count; i++){
+      for(let build of var_build.graph){
+        const varlist = [...build.varlist];
+        let line = build.line;
+        while(varlist.length){
+          const var_ = varlist.pop();
+          let _value = var_.value;
+          if(_value.length != 1) _value = _value[i];
+          line = line.replace(`~//${var_.pos}//~`, _value);
+        }
+        output.push(line);
       }
-      output.push(line);
     }
   }
+
+
+  //console.log(JSON.stringify(var_builds, 2, '  '));
   return output.join("\n");
 }
 
 function enabled$loc(){
   const loc = app$config.server.EnabledLoc;
   const output_file = app$config.server.OutputFile || 'a3ensite.live.conf';;
-  if(!access$check(loc)) console_error(`config.server.EnabledLoc ${loc} is unaccessable.`);
+  if(!access$check(loc)) print_error(`config.server.EnabledLoc ${loc} is unaccessable.`);
   return path.join(loc, output_file);
 }
 
@@ -92,7 +127,7 @@ function $enable(){
   const loc = enabled$loc();
   fs.writeFileSync(loc, output);
   //console.log(app$config);
-  console.log("-> a3ensite applied");
+  print_log("-> a3ensite applied");
   $status();
 }
 function $disable(){
@@ -101,11 +136,11 @@ function $disable(){
     enabled: fs.existsSync(loc)
   };
   if(!state.enabled) {
-    console.log("-> a3ensite already disabled");
+    print_log("-> a3ensite already disabled");
   }else{
-    console.log("-> a3ensite disabling...");
+    print_log("-> a3ensite disabling...");
     fs.writeFileSync(loc, "");
-    console.log("-> a3ensite disabled");
+    print_log("-> a3ensite disabled");
   }
   $status();
 }
@@ -119,10 +154,10 @@ function $status(){
     const latest = nodefs.statSync(loc);
     state.changed = latest.mtimeMs < app$config.$changed_time;
   }
-  console.log(`Sites: ${app$config.sites.length}`);
-  console.log(`Status: ${ state.enabled ? "Enabled" : "Disabled" }`);
+  print_log(`Sites: ${app$config.sites.length}`);
+  print_log(`Status: ${ state.enabled ? "Enabled" : "Disabled" }`);
   if(state.changed){
-    console.log(`Config: Config File Changed ~ ${app$config.$config_file}`);
+    print_log(`Config: Config File Changed ~ ${app$config.$config_file}`);
   }
 }
 
@@ -133,7 +168,7 @@ function setup_config(){
     sites: []
   }
   const config_file = app$argv.config || app$argv.$config
-  if(!fs.existsSync(config_file)) console_error(`--config file not found ${config_file}`);
+  if(!fs.existsSync(config_file)) print_error(`--config file not found ${config_file}`);
   //|| local_file()
   const config = JSON.parse(fs.readFileSync(config_file, 'utf8'));
   _config.server = { ..._config.server, ...config.server }
@@ -142,7 +177,7 @@ function setup_config(){
   const _stat = nodefs.statSync(config_file);
   _config.$changed_time = _stat.mtimeMs;
   _config.$config_file = config_file;
-  if(!_config.server?.EnabledLoc) console_error(`config.server.EnabledLoc is required`);
+  if(!_config.server?.EnabledLoc) print_error(`config.server.EnabledLoc is required`);
   return _config;
 }
 
@@ -159,7 +194,7 @@ function setup_argv(){
       argv[arg.slice(2)] = true;
     }else{
       const last = _argv[i - 1].slice(2);
-      if(argv[last] !== true) console_error(`Invalid argument ${arg}`);
+      if(argv[last] !== true) print_error(`Invalid argument ${arg}`);
       else {
         argv[last] = arg;
       }
@@ -171,10 +206,11 @@ function setup_argv(){
 
 function setup_template(app$argv){
   const template_file = app$argv.template || app$argv.$template;
-  if(!fs.existsSync(template_file)) console_error(`--template file not found ${template_file}`);
+  if(!fs.existsSync(template_file)) print_error(`--template file not found ${template_file}`);
   const template = fs.readFileSync(template_file, 'utf8');
   const lines = template.split("\n");
   const output = [];
+  let numberline = 0;
   for(let line of lines){
     let pos = 0;
     const varlist = [];
@@ -205,7 +241,8 @@ function setup_template(app$argv){
       var_ = line.match(/\$\??\!?\[([^\s]+)\]\$/)
 
     }
-    output.push({ varlist, line });
+    output.push({ template_file, numberline, varlist, line });
+    numberline++;
     //console.log(line);
   }
   return output;
