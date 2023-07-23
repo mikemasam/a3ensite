@@ -1,12 +1,14 @@
 {
   "name": "a3ensite",
-  "version": "0.0.9",
-  "type": "module",
+  "version": "0.1.0",
   "description": "Apache/Nginx/Config Manager, JSON based",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "dev": "nodemon --exec ts-node app.ts",
+    "build": "tsc"
+  },
   "bin": {
-    "a3ensite": "index.js"
+    "a3ensite": "out/app.js"
   },
   "repository": {
     "type": "git",
@@ -22,5 +24,12 @@
     "automation"
   ],
   "author": "mikemasam",
-  "license": "Apache License 2.0"
+  "license": "Apache License 2.0",
+  "dependencies": {
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^20.4.4"
+  }
 }
