@@ -2,7 +2,7 @@
 
 - `a3ensite make sites` - Generate apache or nginx configuration file
 - `a3ensite make hosts` - Generate hosts entries to /etc/hosts or any other Hosts.FileLoc
-- `a3ensite status sites` - Print sites status [Count, Status]
+- `a3ensite status` - Print status [Sites, Hosts]
 
 ### Reference
 
@@ -18,13 +18,14 @@
 {
   "options": {
         "Hosts": {
-            "FileLoc": "/etc/hosts",
+            "EnabledLoc": "/etc/hosts"
             "HostNameKey": "ServerName",
             "HostIpKey": "ServerIp",
         }
   },
   "server": {
-    "EnabledLoc": "/tmp"
+    "EnabledLoc": "/tmp",
+    "OutputFile": "app.conf",
   },
   "defaults": {
     "Servername": "server0"

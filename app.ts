@@ -33,10 +33,7 @@ const tasks: { [key: string]: { [key: string]: any } } = {
     hosts: null,
     sites: null,
   },
-  status: {
-    hosts: null,
-    sites: $sites_status,
-  },
+  status: $sites_status,
 };
 let task: any = tasks;
 for (let i = 0; i < app$argv._.length; i++) {
@@ -59,7 +56,14 @@ print_log("\n");
 function $make_hosts() {
   const start_tag = "#a3ensite-start";
   const end_tag = "#a3ensite-end";
-  const curr_hosts = fs.readFileSync("/etc/hosts", "utf8");
+
+  if (!access$check(app$config.options.hosts.EnabledLoc)) {
+    print_error("Hosts file not writable config: options.hosts.EnabledLoc");
+  }
+  const curr_hosts = fs.readFileSync(
+    app$config.options.hosts.EnabledLoc,
+    "utf8"
+  );
   const start_pos = curr_hosts.indexOf(start_tag);
   const end_pos = curr_hosts.indexOf(end_tag);
   let new_hosts = curr_hosts;
@@ -83,12 +87,13 @@ function $make_hosts() {
   }
   local_hosts.push(end_tag);
   new_hosts = new_hosts + local_hosts.join("\n");
-  fs.writeFileSync("/etc/hosts", new_hosts);
+  fs.writeFileSync(app$config.options.hosts.EnabledLoc, new_hosts);
 }
 
 type HostOptions = {
   HostNameKey: string;
   HostIpKey: string;
+  EnabledLoc: string;
 };
 interface AppConfig {
   options: {
@@ -182,7 +187,7 @@ function $build() {
         let line = build.line;
         while (varlist.length) {
           const var_: VarList = varlist.pop() as VarList;
-          let _value = var_.value.length != 1 ? var_.value[i] : var_.value[1];
+          let _value = var_.value.length != 1 ? var_.value[i] : var_.value[0];
           line = line.replace(`~//${var_.pos}//~`, _value);
         }
         output.push(line);
@@ -195,7 +200,7 @@ function $build() {
 
 function enabled$loc() {
   const loc = app$config.server.EnabledLoc;
-  const output_file = app$config.server.OutputFile || "a3ensite.live.conf";
+  const output_file = app$config.server.OutputFile;
   if (!access$check(loc))
     print_error(`config.server.EnabledLoc ${loc} is unaccessable.`);
   return path.join(loc, output_file);
@@ -233,7 +238,10 @@ function $sites_status() {
     state.changed = latest.mtimeMs < app$config.$changed_time;
   }
   print_log(`Sites: ${app$config.sites.length}`);
-  print_log(`Status: ${state.enabled ? "Enabled" : "Disabled"}`);
+  print_log(`Sites EnabledLoc: ${app$config.server.EnabledLoc}`);
+  print_log(`Sites OutputFile: ${app$config.server.OutputFile}`);
+  print_log(`Sites Status: ${state.enabled ? "Enabled" : "Disabled"}`);
+  print_log(`Hosts EnabledLoc: ${app$config.options.hosts.EnabledLoc}`);
   if (state.changed) {
     print_log(`Config: Config File Changed ~ ${app$config.$config_file}`);
   }
@@ -245,9 +253,21 @@ function setup_config() {
     print_error(`--config file not found ${config_file}`);
   const config = JSON.parse(fs.readFileSync(config_file, "utf8"));
   const _stat = fs.statSync(config_file);
+  const options = {
+    ...config.options,
+    hosts: {
+      OutputFile: "a3ensite.live.conf",
+      EnabledLoc: "/etc/hosts",
+      ...config?.options?.hosts,
+    },
+  };
+  const server = {
+    OutputFile: "a3ensite.live.conf",
+    ...config.server,
+  };
   let _config: AppConfig = {
-    options: config.options || { host: {} },
-    server: config.server || {},
+    options: options,
+    server: server,
     defaults: config.defaults || {},
     sites: config.sites,
     $changed_time: _stat.mtimeMs,
@@ -301,6 +321,7 @@ function setup_template(app$argv: ParsedArgs) {
 }
 
 function access$check(loc: string) {
+  if (!loc) return false;
   try {
     fs.accessSync(loc, fs.constants.R_OK | fs.constants.W_OK);
     return true;
