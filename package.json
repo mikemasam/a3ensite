@@ -1,6 +1,6 @@
 {
   "name": "a3ensite",
-  "version": "0.1.12",
+  "version": "0.1.121",
   "description": "Apache/Nginx/Config Manager, JSON based",
   "main": "index.js",
   "scripts": {
