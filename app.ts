@@ -44,8 +44,8 @@ for (let i = 0; i < app$argv._.length; i++) {
 if (typeof task != "function")
   print_error(
     `error: '${app$argv._.join(
-      "->"
-    )}' ~ Invalid task  \n Help \n--config a3ensite.json \n--template a3ensite.conf`
+      "->",
+    )}' ~ Invalid task  \n Help \n--config a3ensite.json \n--template a3ensite.conf`,
   );
 else {
   task();
@@ -62,7 +62,7 @@ function $make_hosts() {
   }
   const curr_hosts = fs.readFileSync(
     app$config.options.hosts.EnabledLoc,
-    "utf8"
+    "utf8",
   );
   const start_pos = curr_hosts.indexOf(start_tag);
   const end_pos = curr_hosts.indexOf(end_tag);
@@ -70,7 +70,7 @@ function $make_hosts() {
   if (start_pos > -1 && end_pos > -1) {
     new_hosts = `${curr_hosts.substring(0, start_pos)}${curr_hosts.substring(
       end_pos + end_tag.length,
-      curr_hosts.length
+      curr_hosts.length,
     )}`;
   }
   const local_hosts: string[] = [];
@@ -132,8 +132,8 @@ function $build() {
     print_error("[Array] config.sites is required");
   const sites = app$config.sites;
   const var_builds: VarBuild[] = [];
+  const defaults = app$config.defaults;
   for (let site of sites) {
-    const state = [];
     const var_build: VarBuild = {
       graph: [],
       count: 1,
@@ -145,10 +145,17 @@ function $build() {
       for (const var_ of varlist) {
         let _value: string[] = [];
         if (site[var_.name] !== undefined) {
-          if (var_.typed != "display") _value.push(site[var_.name]);
+          if (var_.typed != "display") {
+            if (Array.isArray(site[var_.name])) _value.push(...site[var_.name]);
+            else _value.push(site[var_.name]);
+          }
         } else if (app$config.defaults[var_.name] !== undefined) {
-          if (var_.typed != "display")
-            _value.push(app$config.defaults[var_.name]);
+          if (var_.typed != "display") {
+            if (Array.isArray(defaults[var_.name]))
+              _value.push(...defaults[var_.name]);
+            else _value.push(defaults[var_.name]);
+          }
+          //_value.push(app$config.defaults[var_.name]);
         } else {
           if (var_.typed == "optional" || var_.typed == "display") {
             line = null;
@@ -158,10 +165,15 @@ function $build() {
           }
         }
         if (_value.length == 0) continue;
-        if (var_build.count == 1) var_build.count = _value.length;
-        else if (_value.length != var_build.count) {
+        //if there array, they should all be the same size
+        if (_value.length == 1) {
+        } else if (var_build.count == 1) {
+          var_build.count = _value.length;
+        } else if (var_build.count != 1 && _value.length != 1) {
+          var_build.count = _value.length;
+        } else if (_value.length != var_build.count) {
           print_error(
-            `${input.template_file}: ${input.numberline} Expected ${var_build.count} values, Found ${_value.length} values`
+            `${input.template_file}: ${input.numberline} Expected ${var_build.count} values, Found ${_value.length} values`,
           );
         }
         _varlist.push({
@@ -176,6 +188,7 @@ function $build() {
         varlist: [..._varlist],
       });
     }
+
     var_builds.push(var_build);
   }
 
